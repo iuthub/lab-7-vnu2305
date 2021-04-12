@@ -11,35 +11,52 @@ if (isset($_GET['logout'])&&$_GET['logout']=='1')
 
 $db = new PDO('mysql:host=localhost;dbname=blog', 'vnu', 'xTKBw1M1tDPMuG/E');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$get_accounts_stmt = $db->prepare('SELECT username,password FROM users');
+$get_accounts_stmt = $db->prepare('SELECT id,username,password FROM users');
 $get_accounts_stmt->execute();
 $rows = $get_accounts_stmt->fetchAll();
-
 
 $username = '';
 $password = '';
 $rememberME = isset($_POST['remember'])?$_POST['remember']:'';
 
 if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $authName = $_POST["username"];
-    $authPwd = $_POST["pwd"];
+    $authName = isset($_POST["username"])?$_POST["username"]:'';
+    $authPwd = isset($_POST["pwd"])?$_POST["pwd"]:'';
 
     foreach ($rows as $row) {
     if ($row["username"] == $authName && $row["password"] == $authPwd) {
         $_SESSION['username'] = $row['username'];
         $_SESSION['password'] = $row['password'];
+        $_SESSION['ID'] = $row['id'];
     }
     }
     if($rememberME)
     {
-        setcookie("username",$_POST["username"],time()+60*60*24*365);
-        setcookie("password",$_POST["pwd"],time()+60*60*24*365);
+        setcookie("username",isset($_POST["username"])?$_POST["username"]:'',time()+60*60*24*365);
+        setcookie("password",isset($_POST["pwd"])?$_POST["pwd"]:'',time()+60*60*24*365);
     }
     else
     {
-        setcookie("username",$_POST["username"],time()+-1);
-        setcookie("password",$_POST["pwd"],time()-1);
+        setcookie("username",isset($_POST["username"])?$_POST["username"]:'',time()-1);
+        setcookie("password",isset($_POST["pwd"])?$_POST["pwd"]:'',time()-1);
     }
+
+
+    $foreignKey = isset($_SESSION['ID'])?$_SESSION['ID']:'';
+    $title = isset($_POST['title'])?$_POST['title']:'';
+    $body = isset($_POST['body'])?$_POST['body']:'';
+    $date = date("Y-m-d");
+
+    if($body!=''&&$title!='')
+    {
+        $make_post_stmt = $db->prepare('INSERT INTO posts(title,body,publishDate,userId) VALUES(?,?,?,?)');
+        $make_post_stmt->execute(array($title, $body, $date,$foreignKey));
+    }
+
+
+    $get_posts_stmt = $db->prepare('SELECT u.fullname,p.publishDate,p.title,p.body FROM posts p JOIN users u on p.userId=u.id WHERE u.id ='.$_SESSION['ID'].';');
+    $get_posts_stmt->execute();
+    $rows1 = $get_posts_stmt->fetchAll();
 }
 ?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
@@ -104,16 +121,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             </form>
             <div class="onecol">
                 <div class="card">
-                    <h2>TITLE HEADING</h2>
-                    <h5>Author, Sep 2, 2017</h5>
+                    <?php
+                    foreach ($rows1 as $row1)
+                    {
+                    ?>
+                    <h2><?=$row1['title']?></h2>
+                    <h5><?=$row1['fullname']?>, <?=$row1['publishDate']?></h5>
                     <p>Some text..</p>
-                    <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
-                </div>
-                <div class="card">
-                    <h2>TITLE HEADING</h2>
-                    <h5>Author, Sep 2, 2017</h5>
-                    <p>Some text..</p>
-                    <p>Sunt in culpa qui officia deserunt mollit anim id est laborum consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco.</p>
+                    <p><?=$row1['body']?></p>
+                <?php } ?>
                 </div>
             </div>
         <?php } ?>
