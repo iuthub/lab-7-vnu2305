@@ -1,10 +1,11 @@
-<?php  
+<?php
+error_reporting(1);
 
 include('connection.php');
 $db = new PDO('mysql:host=localhost;dbname=blog', 'vnu', 'xTKBw1M1tDPMuG/E');
 $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$add_account_stmt = $db->prepare('INSERT INTO users(username, fullname, email,password) VALUES(?,?,?,?)');
-
+$add_account_stmt = $db->prepare('REPLACE INTO users(id,username, fullname, email,password) VALUES(?,?,?,?,?)');
+$currentId=isset($_COOKIE['id'])?$_COOKIE['id']:'';
 
 $notConfirmed = false;
 $username = '';
@@ -26,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
     else
     {
-       $add_account_stmt->execute(array($username, $fullName, $email,$password));
+       $add_account_stmt->execute(array($currentId,$username, $fullName, $email,$password));
        header('Location: index.php');
     }
 }
@@ -41,7 +42,15 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 	
 	<body>
 		<?php include('header.php'); ?>
+        <?php
+            if($currentId!='')
+            {
+        ?>
 
+        <p class="error">
+            Remember as you change your password, you lose your posts.
+        </p>
+        <?php } ?>
 		<h2>User Details Form</h2>
 		<h4>Please, fill below fields correctly</h4>
 		<form action="register.php" method="post">

@@ -1,5 +1,6 @@
 <?php
 include('connection.php');
+error_reporting(1);
 session_start();
 
 
@@ -29,6 +30,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
         $_SESSION['password'] = $row['password'];
         $_SESSION['ID'] = $row['id'];
     }
+    else
+    {
+        print_r("The user does not exist,try again at: /index.php");
+        error_reporting(0);
+    }
     }
     if($rememberME)
     {
@@ -47,6 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $body = isset($_POST['body'])?$_POST['body']:'';
     $date = date("Y-m-d");
 
+    setcookie("id",$foreignKey,time()+3600);
+
     if($body!=''&&$title!='')
     {
         $make_post_stmt = $db->prepare('INSERT INTO posts(title,body,publishDate,userId) VALUES(?,?,?,?)');
@@ -54,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     }
 
 
-    $get_posts_stmt = $db->prepare('SELECT u.fullname,p.publishDate,p.title,p.body FROM posts p JOIN users u on p.userId=u.id WHERE u.id ='.$_SESSION['ID'].';');
+    $get_posts_stmt = $db->prepare('SELECT u.fullname,p.publishDate,p.title,p.body FROM posts p JOIN users u on p.userId=u.id WHERE u.id ='.isset($_SESSION['ID'])?$_SESSION['ID']:'');
     $get_posts_stmt->execute();
     $rows1 = $get_posts_stmt->fetchAll();
 }
@@ -122,14 +130,16 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
             <div class="onecol">
                 <div class="card">
                     <?php
-                    foreach ($rows1 as $row1)
-                    {
-                    ?>
-                    <h2><?=$row1['title']?></h2>
-                    <h5><?=$row1['fullname']?>, <?=$row1['publishDate']?></h5>
-                    <p>Some text..</p>
-                    <p><?=$row1['body']?></p>
-                <?php } ?>
+                    if (isset($rows1)) {
+                        foreach ($rows1 as $row1)
+                        {
+                        ?>
+                        <h2><?=$row1['title']?></h2>
+                        <h5><?=$row1['fullname']?>, <?=$row1['publishDate']?></h5>
+                        <p>Some text..</p>
+                        <p><?=$row1['body']?></p>
+                    <?php }
+                    } ?>
                 </div>
             </div>
         <?php } ?>
